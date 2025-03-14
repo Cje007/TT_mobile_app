@@ -100,13 +100,13 @@ class _ForgotPasswordOTPScreenState extends State<ForgotPasswordOTPScreen> {
         //     backgroundColor: Colors.red,
         //     textColor: Colors.white,
         //     fontSize: 16.0);
-        IconSnackBar.show(
+       /* IconSnackBar.show(
           context,
           label: statusMessage,
           snackBarType: SnackBarType.alert,
           backgroundColor: Color(0xffBA1A1A),
           iconColor: Colors.white,
-        );
+        );*/
       }
     } catch (e) {
       print(e);

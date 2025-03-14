@@ -327,10 +327,15 @@ class _HomeFragmentState extends State<HomeFragment>
                         InkWell(
                           onTap: () {
                             Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (BuildContext context) =>
-                                        NotificationScreen()));
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        NotificationScreen(),
+                                transitionDuration: Duration.zero,
+                                reverseTransitionDuration: Duration.zero,
+                              ),
+                            );
                           },
                           child: Stack(
                             children: [
@@ -871,7 +876,7 @@ class _HomeFragmentState extends State<HomeFragment>
                                                     checkExpiry(jobList[index]
                                                                 ['dueDate'] ??
                                                             '1990-01-01')
-                                                        ? 'Expired'
+                                                        ? 'Job Expired'
                                                         : processDate(jobList[
                                                                     index][
                                                                 'createdDate'] ??

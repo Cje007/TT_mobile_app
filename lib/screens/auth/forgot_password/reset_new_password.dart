@@ -28,8 +28,8 @@ class _ResetNewPasswordState extends State<ResetNewPassword> {
   bool _isConfirmPasswordValid = true;
   TextEditingController confirmPasswordController = TextEditingController();
   bool confirmPasswordHide = true, passwordHide = true;
-  String confirm_passwordErrorMSG = "Password is required";
-  String passwordErrorMSG = "Password is required";
+  String confirm_passwordErrorMSG = "Password is Required";
+  String passwordErrorMSG = "Password is Required";
 
   Future<void> setNewPassword() async {
     final url = Uri.parse(
@@ -96,12 +96,12 @@ class _ResetNewPasswordState extends State<ResetNewPassword> {
     if (passwordController.text.length < 8) {
       setState(() {
         _isPasswordValid = false;
-        passwordErrorMSG = 'Password must be at-least 8 characters';
+        passwordErrorMSG = 'Password is Requird';
       });
     } else if (passwordController.text != confirmPasswordController.text) {
       setState(() {
         _isConfirmPasswordValid = false;
-        confirm_passwordErrorMSG = 'Passwords do not match';
+        confirm_passwordErrorMSG = 'Passwords didn\'t not match';
       });
       if (kDebugMode) {
         print('Not Equal passwords');
@@ -130,7 +130,7 @@ class _ResetNewPasswordState extends State<ResetNewPassword> {
             top: 120,
             child: Container(
               width: MediaQuery.of(context).size.width,
-              padding: EdgeInsets.all(10),
+              padding: EdgeInsets.all(15),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
@@ -179,6 +179,7 @@ class _ResetNewPasswordState extends State<ResetNewPassword> {
                           controller: passwordController,
                           cursorColor: Color(0xff004C99),
                           obscureText: passwordHide,
+                          enabled: !isLoading,
                           style: TextStyle(fontSize: 14, fontFamily: 'Lato'),
                           decoration: InputDecoration(
                               suffixIcon: IconButton(
@@ -221,7 +222,7 @@ class _ResetNewPasswordState extends State<ResetNewPassword> {
                             if (value.length < 8) {
                               setState(() {
                                 _isPasswordValid = false;
-                                passwordErrorMSG = 'Password is required';
+                                passwordErrorMSG = 'Password is Required';
                               });
                             } else {
                               setState(() {
@@ -252,6 +253,7 @@ class _ResetNewPasswordState extends State<ResetNewPassword> {
                           controller: confirmPasswordController,
                           cursorColor: Color(0xff004C99),
                           obscureText: confirmPasswordHide,
+                          enabled: !isLoading,
                           style: TextStyle(fontSize: 14, fontFamily: 'Lato'),
                           decoration: InputDecoration(
                               suffixIcon: IconButton(

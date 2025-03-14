@@ -212,17 +212,15 @@ class _SearchandfilterState extends State<Searchandfilter> {
                       );
                     },
                     optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty) {
-                        // Show all suggestions when the field is empty
-                        return jobSuggestions;
-                      }
-                      // Show filtered suggestions based on input
-                      return jobSuggestions.where(
-                        (title) => title
-                            .toLowerCase()
-                            .contains(textEditingValue.text.toLowerCase()),
-                      );
-                    },
+  if (textEditingValue.text.isEmpty) {
+    return jobSuggestions;
+  }
+
+  return jobSuggestions.where(
+    (title) => title.toLowerCase().startsWith(textEditingValue.text.toLowerCase()),
+  );
+},
+
                     onSelected: (String selection) {
                       setState(() {
                         selectedJob = selection;
@@ -257,17 +255,17 @@ class _SearchandfilterState extends State<Searchandfilter> {
                             ),
                           ),
                           suffixIcon: isLoading
-                              ? Padding(
-                                  padding: const EdgeInsets.all(10.0),
+                              ?Padding(
+                                  padding: const EdgeInsets.all(15.0),
                                   child: SizedBox(
                                     width: MediaQuery.of(context).size.width *
-                                        0.02,
+                                        0.001,
                                     height: MediaQuery.of(context).size.width *
-                                        0.02,
+                                        0.001,
                                     child: CircularProgressIndicator(
                                       strokeWidth:
                                           MediaQuery.of(context).size.width *
-                                              0.008,
+                                              0.05,
                                       valueColor:
                                           const AlwaysStoppedAnimation<Color>(
                                               Color(0xff004C99)),

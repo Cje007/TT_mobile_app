@@ -5,10 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_icon_snackbar/flutter_icon_snackbar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
 import 'package:google_sign_in/google_sign_in.dart';
-
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:talent_turbo_new/AppColors.dart';
 import 'package:talent_turbo_new/AppConstants.dart';
 import 'package:talent_turbo_new/Utils.dart';
@@ -21,7 +18,6 @@ import 'package:talent_turbo_new/screens/auth/login/login_with_mobile_screen.dar
 import 'package:talent_turbo_new/screens/auth/register/register_new_user.dart';
 import 'package:http/http.dart' as http;
 import 'package:talent_turbo_new/screens/main/home_container.dart';
-
 import '../auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -57,17 +53,18 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  Future<void> emailSignIn() async {
-    final url = Uri.parse(AppConstants.BASE_URL + AppConstants.LOGIN);
+ Future<void> emailSignIn() async {
+  final url = Uri.parse(AppConstants.BASE_URL + AppConstants.LOGIN);
 
-    final bodyParams = {
-      "email": emailController.text,
-      "password": passwordController.text
-    };
+  final bodyParams = {
+    "email": emailController.text,
+    "password": passwordController.text
+  };
 
-    try {
-      var connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
+  try {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      if (mounted) { // Ensure context is still available
         IconSnackBar.show(
           context,
           label: 'No internet connection',
@@ -75,40 +72,42 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Color(0xff2D2D2D),
           iconColor: Colors.white,
         );
-        return; // Exit the function if no internet
       }
-      setState(() {
-        isLoading = true;
-      });
+      return; // Exit the function if no internet
+    }
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(bodyParams),
-      );
+    setState(() {
+      isLoading = true;
+    });
 
-      if (kDebugMode) {
-        print(
-            'Response code ${response.statusCode} :: Response => ${response.body}');
-      }
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(bodyParams),
+    );
 
-      if (response.statusCode == 200) {
-        var resOBJ = jsonDecode(response.body);
+    if (kDebugMode) {
+      print('Response code ${response.statusCode} :: Response => ${response.body}');
+    }
 
-        String statusMessage = resOBJ['message'];
+    if (response.statusCode == 200) {
+      var resOBJ = jsonDecode(response.body);
 
-        if (!resOBJ['result']) {
-          if (statusMessage.toLowerCase().contains('exists')) {
-            setState(() {
-              _isEmailValid = false;
-              emailErrorMessage = 'User doesn\'t exist';
-            });
-          } else if (statusMessage.toLowerCase().contains('passwo')) {
-            setState(() {
-              _isPasswordValid = false;
-              passwordErrorMessage = 'Invalid password';
-            });
-          } else {
+      String statusMessage = resOBJ['message'];
+
+      if (!resOBJ['result']) {
+        if (statusMessage.toLowerCase().contains('exists')) {
+          setState(() {
+            _isEmailValid = false;
+            emailErrorMessage = 'User doesn\'t exist';
+          });
+        } else if (statusMessage.toLowerCase().contains('password')) {
+          setState(() {
+            _isPasswordValid = false;
+            passwordErrorMessage = 'Invalid password';
+          });
+        } else {
+          if (mounted) { // Ensure context is still available
             IconSnackBar.show(
               context,
               label: statusMessage,
@@ -117,39 +116,43 @@ class _LoginScreenState extends State<LoginScreen> {
               iconColor: Colors.white,
             );
           }
-        } else {
-          print(resOBJ.toString());
-
-          final Map<String, dynamic> data = resOBJ['data'];
-          UserData userData = UserData.fromJson(data);
-
-          UserCredentials credentials = UserCredentials(
-              username: emailController.text,
-              password: passwordController.text);
-          await credentials.saveCredentials();
-
-          await saveUserData(userData);
-
-          UserData? retrievedUserData = await getUserData();
-
-          if (kDebugMode) {
-            print('Saved Successfully');
-            print('User Name: ${retrievedUserData!.name}');
-          }
-
-          fetchCandidateProfileData(
-              retrievedUserData!.profileId, retrievedUserData!.token);
-          Navigator.pushReplacementNamed(context, '/home');
         }
+      } else {
+        print(resOBJ.toString());
+
+        final Map<String, dynamic> data = resOBJ['data'];
+        UserData userData = UserData.fromJson(data);
+
+        UserCredentials credentials = UserCredentials(
+            username: emailController.text,
+            password: passwordController.text);
+        await credentials.saveCredentials();
+
+        await saveUserData(userData);
+
+        UserData? retrievedUserData = await getUserData();
+
+        if (kDebugMode) {
+          print('Saved Successfully');
+          print('User Name: ${retrievedUserData!.name}');
+        }
+
+        fetchCandidateProfileData(
+            retrievedUserData!.profileId, retrievedUserData!.token);
+        Navigator.pushReplacementNamed(context, '/home');
       }
-    } catch (e) {
-      print(e.toString());
-    } finally {
+    }
+  } catch (e) {
+    print(e.toString());
+  } finally {
+    if (mounted) {
       setState(() {
         isLoading = false;
       });
     }
   }
+}
+
 
   Future<void> socialGoogleSignin(
       String email, String fn, String ln, String mobile) async {
@@ -226,20 +229,12 @@ class _LoginScreenState extends State<LoginScreen> {
               _isEmailValid = false;
               emailErrorMessage = 'User doesn\'t exists';
             });
-          } else if (statusMessage.toLowerCase().contains('passwo')) {
+          } else if (statusMessage.toLowerCase().contains('password')) {
             setState(() {
               _isPasswordValid = false;
               passwordErrorMessage = 'Invalid password';
             });
           } else {
-            // Fluttertoast.showToast(
-            //     msg: statusMessage,
-            //     toastLength: Toast.LENGTH_SHORT,
-            //     gravity: ToastGravity.BOTTOM,
-            //     timeInSecForIosWeb: 1,
-            //     backgroundColor: Colors.red,
-            //     textColor: Colors.white,
-            //     fontSize: 16.0);
             IconSnackBar.show(
               context,
               label: statusMessage,
@@ -316,19 +311,8 @@ class _LoginScreenState extends State<LoginScreen> {
             left: 0,
             child: Image.asset('assets/images/Ellipse 2.png'),
           ),
-          Positioned.fill(
-              child: SingleChildScrollView(
-            physics: BouncingScrollPhysics(),
-            child: Column(children: [
-              Center(
-                  child: Image.asset('assets/images/tt_logo_full_1.png',
-                      width: MediaQuery.of(context).size.width * 0.6,
-                      height: MediaQuery.of(context).size.height * 0.25,
-                      fit: BoxFit.contain)),
-            ]),
-          )),
           Positioned(
-              top: MediaQuery.of(context).size.height * 0.26,
+              top: 0,
               left: 15,
               right: 15,
               bottom: 0,
@@ -336,6 +320,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.08),
+                    Center(
+                        child: Image.asset(
+                      'assets/images/tt_logo_full_1.png',
+                      height: MediaQuery.of(context).size.height * 0.095,
+                    )),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.05),
                     Align(
                         alignment: Alignment.center,
                         child: Text(
@@ -346,9 +337,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               fontSize: 20,
                               fontFamily: 'Lato'),
                         )),
-                    SizedBox(
-                      height: 20,
-                    ),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                     Padding(
                       padding: EdgeInsets.only(
                         left: MediaQuery.of(context).size.width * 0.015,
@@ -465,45 +454,45 @@ class _LoginScreenState extends State<LoginScreen> {
                                 fontFamily: 'Lato',
                                 color: Color(0xff545454)),
                             decoration: InputDecoration(
-                                suffixIcon: IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        passwordHide = !passwordHide;
-                                      });
-                                    },
-                                    //icon: Icon( passwordHide?Icons.visibility :Icons.visibility_off)),
-                                    icon: SvgPicture.asset(passwordHide
-                                        ? 'assets/images/ic_hide_password.svg'
-                                        : 'assets/images/ic_show_password.svg')),
-                                hintText: 'Enter your password',
-                                border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(
-                                      color: _isPasswordValid
-                                          ? Color(0xffD9D9D9)
-                                          : Color(0xffBA1A1A),
-                                      width: 1),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide(
-                                      color: _isPasswordValid
-                                          ? Color(0xff004C99)
-                                          : Color(0xffBA1A1A),
-                                      width: 1),
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                    vertical: 10, horizontal: 10)),
+                              suffixIcon: IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    passwordHide = !passwordHide;
+                                  });
+                                },
+                                icon: SvgPicture.asset(passwordHide
+                                    ? 'assets/images/ic_hide_password.svg'
+                                    : 'assets/images/ic_show_password.svg'),
+                              ),
+                              hintText: 'Enter your password',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(
+                                    color: _isPasswordValid
+                                        ? Color(0xffD9D9D9)
+                                        : Color(0xffBA1A1A),
+                                    width: 1),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(
+                                    color: _isPasswordValid
+                                        ? Color(0xff004C99)
+                                        : Color(0xffBA1A1A),
+                                    width: 1),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 10),
+                            ),
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(
                                 RegExp(r'[\p{L}\p{N}\p{P}\p{S}]',
                                     unicode: true),
                               ),
-                              FilteringTextInputFormatter.deny(
-                                RegExp(r'\s'),
-                              ),
+                              FilteringTextInputFormatter.deny(RegExp(r'\s')),
                               FilteringTextInputFormatter.deny(
                                 RegExp(
                                     r'[\u{1F300}-\u{1F6FF}|\u{1F900}-\u{1F9FF}|\u{2600}-\u{26FF}|\u{2700}-\u{27BF}]',
@@ -512,11 +501,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                             onChanged: (val) {
                               setState(() {
-                                _isPasswordValid = true;
+                                _isPasswordValid =
+                                    true; // Reset validation on input change
                               });
                             },
                           ),
-                          if (!_isEmailValid)
+                          if (!_isPasswordValid)
                             Padding(
                               padding: EdgeInsets.only(
                                 left: 0,
@@ -532,8 +522,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                         ]),
                     SizedBox(
-                      height: 30,
+                      height: MediaQuery.of(context).size.height *
+                          0.03, // 3% of screen height
                     ),
+
                     Container(
                       width: (MediaQuery.of(context).size.width) - 15,
                       child: Row(
@@ -542,16 +534,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           InkWell(
                               onTap: () {
                                 Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (BuildContext context) =>
-                                            ForgotPasswordScreen()));
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder: (context, animation,
+                                            secondaryAnimation) =>
+                                        ForgotPasswordScreen(),
+                                    transitionDuration: Duration.zero,
+                                    reverseTransitionDuration: Duration.zero,
+                                  ),
+                                );
                               },
                               child: Text(
                                 'Forgot Password?',
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
                                   fontFamily: 'Lato',
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textColor2,
                                 ),
@@ -561,7 +559,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     //Button
-                    SizedBox(height: 30),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.03, // 3% of screen height
+                    ),
+
                     InkWell(
                       onTap: () {
                         if (emailController.text.trim().isEmpty ||
@@ -570,13 +572,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           if (emailController.text.trim().isEmpty) {
                             setState(() {
                               _isEmailValid = false;
-                              emailErrorMessage =
-                                  'Email ID is required';
+                              emailErrorMessage = 'Email ID is Required';
                             });
                           } else if (!validateEmail(emailController.text)) {
                             setState(() {
                               _isEmailValid = false;
-                              emailErrorMessage = 'Email ID is required';
+                              emailErrorMessage = 'Email ID is Required';
                             });
                           }
 
@@ -609,32 +610,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: 24,
                                   child: TweenAnimationBuilder<double>(
                                     tween: Tween<double>(begin: 0, end: 5),
-                                    duration: Duration(
-                                        seconds:
-                                            2), 
+                                    duration: Duration(seconds: 2),
                                     curve: Curves.linear,
                                     builder: (context, value, child) {
                                       return Transform.rotate(
-                                        angle: value *
-                                            2 *
-                                            3.1416, 
+                                        angle: value * 2 * 3.1416,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 4,
-                                          value: 0.20, 
+                                          value: 0.20,
                                           backgroundColor: const Color.fromARGB(
-                                              142,
-                                              234,
-                                              232,
-                                              232), 
-                                          valueColor: AlwaysStoppedAnimation<
-                                                  Color>(
-                                              Colors
-                                                  .white), 
+                                              142, 234, 232, 232),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.white),
                                         ),
                                       );
                                     },
-                                    onEnd: () =>
-                                        {}, 
+                                    onEnd: () => {},
                                   ),
                                 )
                               : Text(
@@ -645,15 +637,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    SizedBox(height: 20),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.02, // 3% of screen height
+                    ),
+
                     InkWell(
                       onTap: () {
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (BuildContext con) =>
-                                    MobileNumberLogin()));
+    context,
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => MobileNumberLogin(),
+      transitionDuration: Duration.zero, // No transition
+      reverseTransitionDuration: Duration.zero, // No reverse transition
+    ),
+                            
+                          );
                       },
+                      
                       child: Container(
                         width: MediaQuery.of(context).size.width,
                         height: 44,
@@ -671,45 +672,83 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.03, // 3% of screen height
+                    ),
 
-                    //  Container( width: MediaQuery.of(context).size.width,child: Text('Or Log in with your', style: TextStyle(color: AppColors.tertiaryColor), textAlign: TextAlign.center,)),
+                    Container(
+                        width: MediaQuery.of(context).size.width,
+                        child: Text(
+                          'Or Log in with your',
+                          style: TextStyle(
+                            color: AppColors.tertiaryColor,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
+                        )),
 
-                    // SizedBox(height: 30,),
-                    /* Container(
-                  width: MediaQuery.of(context).size.width,
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        InkWell(
-                          onTap: () async {
-                            await _googleAuthService.signOut();
-                            //await _googleSignIn.disconnect();
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height *
+                          0.03, // 3% of screen height
+                    ),
 
-                            final user = await _authService.signInWithGoogle();
-                            if (user != null) {
-                              // ignore: use_build_context_synchronously
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Welcome ${user.displayName}!')),
-                              );
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () async {
+                                await _googleAuthService.signOut();
+                                //await _googleSignIn.disconnect();
 
-                              socialGoogleSignin(user.email!, user.displayName!, user.displayName!, "0");
-                            } else {
-                              // ignore: use_build_context_synchronously
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Sign-in failed. Try again.')),
-                              );
-                            }
-                          },
-                          child: PhysicalModel(elevation: 1,color: Colors.white,borderRadius: BorderRadius.circular(8) ,child: Container(
-                            height: 50,
-                            width: 50,
-                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8),border: Border.all(color: Color(0xffD9D9D9))),
-                           // child: Center(child: Image.asset('assets/images/Google__G__Logo-512.webp', height: 35,),),
-                            //child: Center(child: SvgPicture.asset('assets/images/ic_google.svg', height: 220,),),
-                          )),
-                        )
-                       /* SizedBox(width: 53,),
+                                final user =
+                                    await _authService.signInWithGoogle();
+                                if (user != null) {
+                                  // ignore: use_build_context_synchronously
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            'Welcome ${user.displayName}!')),
+                                  );
+
+                                  socialGoogleSignin(
+                                      user.email!,
+                                      user.displayName!,
+                                      user.displayName!,
+                                      "0");
+                                } else {
+                                  // ignore: use_build_context_synchronously
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('Sign-in failed. Try again.')),
+                                  );
+                                }
+                              },
+                              child: PhysicalModel(
+                                  elevation: 1,
+                                  color: Color(0xffFCFCFC),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    height: 50,
+                                    width: 50,
+                                    decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                            color: Color(0xffD9D9D9))),
+                                    child: Center(
+                                      child: Image.asset(
+                                        'assets/images/Google__G__Logo-512.webp',
+                                        height: 35,
+                                      ),
+                                    ),
+                                    // child: Center(child: SvgPicture.asset('assets/images/ic_google.svg', height: 220,),),
+                                  )),
+                            )
+                            /* SizedBox(width: 53,),
                         InkWell(
                           onTap: (){
                             print('LinkedIn Test');
@@ -742,14 +781,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         )
 
                         */
-                      ],
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),*/
 
                     SizedBox(
-                      height: 30,
+                      height: MediaQuery.of(context).size.height *
+                          0.03, // 3% of screen height
                     ),
+
                     Container(
                       padding: EdgeInsets.all(10),
                       width: MediaQuery.of(context).size.width,
@@ -764,8 +805,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ? 13
                                         : 12,
                                 fontFamily: 'NunitoSans',
-                                color: AppColors.textColor,
-                                fontWeight: FontWeight.w600),
+                                color: const Color(0xFF333333),
+                                fontWeight: FontWeight.w500),
                           ),
                           SizedBox(
                             width: 5,
@@ -787,7 +828,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             ? 13
                                             : 12,
                                     fontFamily: 'NunitoSans',
-                                    color: AppColors.textColor2,
+                                    color: const Color(0xFF256EE8),
                                     fontWeight: FontWeight.w600),
                               )),
                         ],
